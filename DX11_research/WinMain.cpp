@@ -21,20 +21,36 @@ int CALLBACK WinMain(
 	);
 	ShowWindow(hWnd, SW_SHOW);*/
 
-	Window wnd(800, 600, "Start_Window");
-	
-	MSG msg;
-	BOOL gResult;
-	while ((gResult = GetMessage(&msg, nullptr, 0, 0)) > 0)
+	try
 	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
+		Window wnd(800, 600, "Start_Window");
 
-	if (gResult == -1)
+		MSG msg;
+		BOOL gResult;
+		while ((gResult = GetMessage(&msg, nullptr, 0, 0)) > 0)
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+
+		if (gResult == -1)
+		{
+			return -1;
+		}
+
+		return msg.wParam;
+	}
+	catch (const BaseException& base_exception)
 	{
-		return -1;
+		MessageBox(nullptr, base_exception.what(), base_exception.get_type(), MB_OK | MB_ICONEXCLAMATION);
 	}
-
-	return msg.wParam;
+	catch (std::exception std_exception)
+	{
+		MessageBox(nullptr, std_exception.what(), "STANDARD EXCEPTIOM", MB_OK | MB_ICONEXCLAMATION);
+	}
+	catch ( ... )
+	{
+		MessageBox(nullptr, "NO INFO ON EXCEPTION", "UNKNOWN EXCEPTION", MB_OK | MB_ICONEXCLAMATION);
+	}
+	return -1;
 }

@@ -146,11 +146,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BaseException.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WinMain.cpp" />
     <ClCompile Include="WinMessagesMap.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BaseException.h" />
     <ClInclude Include="BaseWin.h" />
     <ClInclude Include="Window.h" />
     <ClInclude Include="WinMessagesMap.h" />

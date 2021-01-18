@@ -1,4 +1,5 @@
 #include "Window.h"
+#include <sstream>
 
 Window::Window_Class Window::Window_Class::wnd_class_;
 
@@ -102,4 +103,53 @@ LRESULT Window::handle_message(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 	}
 
 	return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+Window::Exception::Exception(unsigned line, const char* file, HRESULT hr) noexcept
+	:
+	BaseException(line, file),
+	m_hr (hr)
+{
+	
+}
+
+const char* Window::Exception::what() const noexcept
+{
+	std::ostringstream oss;
+	oss << get_type() << "\n"
+		<< "[ERROR CODE] " << get_error_code() << "\n"
+		<< "[DESCRIPTION]" << get_error_string() << "\n"
+		<< get_origin_string();
+	what_buffer = oss.str();
+	return what_buffer.c_str();
+}
+
+const char* Window::Exception::get_type() const noexcept
+{
+	return "window exception";
+}
+
+std::string Window::Exception::translate_error_code(HRESULT hr) noexcept
+{
+	char* p_msg_buffer = nullptr;
+	DWORD msg_length = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		nullptr, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		reinterpret_cast<LPSTR>(&p_msg_buffer), 0, nullptr);
+	if (msg_length == 0)
+	{
+		return "OOPS, UNRECOGNIZED ERROR";
+	}
+	std::string error_string = p_msg_buffer;
+	LocalFree(p_msg_buffer);
+	return error_string;
+}
+
+HRESULT Window::Exception::get_error_code() const noexcept
+{
+	return m_hr;
+}
+
+std::string Window::Exception::get_error_string() const noexcept
+{
+	return translate_error_code(m_hr);
 }
