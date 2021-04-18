@@ -1,6 +1,9 @@
 #pragma once
 #include "BaseWin.h"
 #include "BaseException.h"
+#include "Keyboard.h"
+#include "Mouse.h"
+#include "optional"
 
 class Window
 {
@@ -22,6 +25,11 @@ public:
 	~Window();
 	Window(const Window&) = delete;
 	Window operator= (const Window&) = delete;
+	void set_title(const std::string& title);
+	static std::optional<int> process_messages();
+
+	Keyboard kbd;
+	Mouse mouse;
 
 private:	
 	class Window_Class
@@ -49,4 +57,5 @@ private:
 		HWND hwnd_;
 };
 
-#define EXCPT (hr) Window::Exception (__LINE__, __FILE__, hr)
+#define EXCPT(hr) Window::Exception (__LINE__, __FILE__, hr)
+#define LAST_EXCPT() Window::Exception(__LINE__, __FILE__, GetLastError())

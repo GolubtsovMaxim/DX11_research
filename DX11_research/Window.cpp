@@ -40,7 +40,7 @@ HINSTANCE Window::Window_Class::get_hinstance() noexcept
 	return wnd_class_.hinstance_;
 }
 
-Window::Window(unsigned width, unsigned height, const char* name) noexcept
+Window::Window(unsigned width, unsigned height, const char* name) noexcept : width_(width), height_(height)
 {
 	// calculate window size based on desired client region size
 	RECT wr;
@@ -48,7 +48,10 @@ Window::Window(unsigned width, unsigned height, const char* name) noexcept
 	wr.right = width + wr.left;
 	wr.top = 100;
 	wr.bottom = height + wr.top;
-	AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, FALSE);
+	if (AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, FALSE) == 0)
+	{
+		LAST_EXCPT();
+	}
 	
 	// create window & get hwnd_
 	hwnd_ = CreateWindow(
@@ -100,7 +103,99 @@ LRESULT Window::handle_message(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 	case WM_CLOSE:
 		PostQuitMessage(0);
 		return 0;
+	case WM_KILLFOCUS:
+		kbd.clear_state();
+		break;
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+		if (!(lParam & 0x40000000) || kbd.autorepeat_is_enabled())
+		{
+			kbd.on_key_pressed(static_cast<unsigned char>(wParam));
+		}
+		break;
+	case WM_SYSKEYUP:
+	case WM_KEYUP:
+		kbd.on_key_released(static_cast<unsigned char>(wParam));
+		break;
+	case WM_CHAR:
+		kbd.on_char(static_cast<unsigned char>(wParam));
+		break;
+
+	case WM_MOUSEMOVE:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		//mouse.on_mouse_move(pt.x, pt.y);
+		if (pt.x >= 0 && pt.x < width_ && pt.y >= 0 && pt.y < height_)
+		{
+			mouse.on_mouse_move(pt.x, pt.y);
+			if (!mouse.is_in_window())
+			{
+				SetCapture(hWnd);
+				mouse.on_mouse_enter();
+			}
+		}
+		// not in client -> log move / maintain capture if button down
+		else
+		{
+			if (wParam & (MK_LBUTTON | MK_RBUTTON))
+			{
+				mouse.on_mouse_move(pt.x, pt.y);
+			}
+			// button up -> release capture / log event for leaving
+			else
+			{
+				ReleaseCapture();
+				mouse.on_mouse_leave();
+			}
+		}
+		break;
 	}
+	case WM_LBUTTONDOWN:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		mouse.on_left_mb_pressed(pt.x, pt.y);
+		break;
+	}
+	case WM_RBUTTONDOWN:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		mouse.on_right_mb_pressed(pt.x, pt.y);
+		break;
+	}
+	case WM_LBUTTONUP:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		mouse.on_left_mb_released(pt.x, pt.y);
+		if (pt.x < 0 || pt.x >= width_ || pt.y < 0 || pt.y >= height_)
+		{
+			ReleaseCapture(); //WINDOWS API
+			mouse.on_mouse_leave();
+		}
+		break;
+	}
+	case WM_RBUTTONUP:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		mouse.on_right_mb_released(pt.x, pt.y);
+			
+		break;
+	}
+	case WM_MOUSEWHEEL:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		/*if (GET_WHEEL_DELTA_WPARAM(wParam) > 0)
+		{
+			mouse.on_wheel_up(pt.x, pt.y);
+		}
+		else if (GET_WHEEL_DELTA_WPARAM(wParam) < 0)
+		{
+			mouse.on_wheel_down(pt.x, pt.y);
+		}*/
+		const int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+		mouse.on_wheel_delta(pt.x, pt.y, delta);
+		break;
+	}
+	};
 
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
@@ -152,4 +247,28 @@ HRESULT Window::Exception::get_error_code() const noexcept
 std::string Window::Exception::get_error_string() const noexcept
 {
 	return translate_error_code(m_hr);
+}
+
+void Window::set_title(const std::string& title)
+{
+	if (SetWindowText(hwnd_, title.c_str()) == 0)
+	{
+		throw LAST_EXCPT();
+	}
+}
+std::optional<int> Window::process_messages()
+{
+	MSG message;
+	while (PeekMessage(&message, nullptr, 0,0,PM_REMOVE))
+	{
+		if (message.message == WM_QUIT)
+		{
+			return message.wParam;
+		}
+
+		TranslateMessage(&message);
+		DispatchMessage(&message);
+	}
+
+	return {};
 }
