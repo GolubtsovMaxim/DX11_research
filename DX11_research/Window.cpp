@@ -1,6 +1,21 @@
 #include "Window.h"
 #include <sstream>
 
+/// <summary>
+#define IDI_ICON1                       101
+
+// Next default values for new objects
+// 
+#ifdef APSTUDIO_INVOKED
+#ifndef APSTUDIO_READONLY_SYMBOLS
+#define _APS_NEXT_RESOURCE_VALUE        102
+#define _APS_NEXT_COMMAND_VALUE         40001
+#define _APS_NEXT_CONTROL_VALUE         1001
+#define _APS_NEXT_SYMED_VALUE           101
+#endif
+#endif
+/// </summary>
+
 Window::Window_Class Window::Window_Class::wnd_class_;
 
 Window::Window_Class::Window_Class() noexcept
@@ -14,7 +29,7 @@ Window::Window_Class::Window_Class() noexcept
 	wc.lpfnWndProc = handle_message_setup;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hInstance = hinstance_;
+	wc.hInstance = get_hinstance();
 	wc.hIcon = nullptr;
 	wc.hCursor = nullptr;
 	wc.hbrBackground = nullptr;
@@ -60,8 +75,10 @@ Window::Window(unsigned width, unsigned height, const char* name) noexcept : wid
 		CW_USEDEFAULT, CW_USEDEFAULT, wr.right - wr.left, wr.bottom - wr.top,
 		nullptr, nullptr, Window_Class::get_hinstance(), this
 	);
-	// show window
+	// newly created windows start off as hidden
 	ShowWindow(hwnd_, SW_SHOWDEFAULT);
+	//construct graphics object
+	p_graphics_ = std::make_unique<Graphics>(hwnd_);
 }
 
 Window::~Window()
@@ -200,34 +217,34 @@ LRESULT Window::handle_message(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-Window::Exception::Exception(unsigned line, const char* file, HRESULT hr) noexcept
+Window::HrException::HrException(int line, const char* file, HRESULT hr) noexcept
 	:
-	BaseException(line, file),
+	Exception(line, file),
 	m_hr (hr)
 {
 	
 }
 
-const char* Window::Exception::what() const noexcept
+const char* Window::HrException::what() const noexcept
 {
 	std::ostringstream oss;
 	oss << get_type() << "\n"
-		<< "[ERROR CODE] " << get_error_code() << "\n"
-		<< "[DESCRIPTION]" << get_error_string() << "\n"
+		<< "[ERROR CODE] 0x" << std::hex << std::uppercase << get_error_code() << std::dec
+		<< "[DESCRIPTION]" << get_error_description() << "\n"
 		<< get_origin_string();
 	what_buffer = oss.str();
 	return what_buffer.c_str();
 }
 
-const char* Window::Exception::get_type() const noexcept
+const char* Window::HrException::get_type() const noexcept
 {
-	return "window exception";
+	return "Window exception";
 }
 
 std::string Window::Exception::translate_error_code(HRESULT hr) noexcept
 {
 	char* p_msg_buffer = nullptr;
-	DWORD msg_length = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	const DWORD msg_length = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		nullptr, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		reinterpret_cast<LPSTR>(&p_msg_buffer), 0, nullptr);
 	if (msg_length == 0)
@@ -239,14 +256,14 @@ std::string Window::Exception::translate_error_code(HRESULT hr) noexcept
 	return error_string;
 }
 
-HRESULT Window::Exception::get_error_code() const noexcept
+HRESULT Window::HrException::get_error_code() const noexcept
 {
 	return m_hr;
 }
 
-std::string Window::Exception::get_error_string() const noexcept
+std::string Window::HrException::get_error_description() const noexcept
 {
-	return translate_error_code(m_hr);
+	return Exception::translate_error_code(m_hr);
 }
 
 void Window::set_title(const std::string& title)
@@ -256,7 +273,7 @@ void Window::set_title(const std::string& title)
 		throw LAST_EXCPT();
 	}
 }
-std::optional<int> Window::process_messages()
+std::optional<int> Window::process_messages() noexcept
 {
 	MSG message;
 	while (PeekMessage(&message, nullptr, 0,0,PM_REMOVE))
@@ -271,4 +288,18 @@ std::optional<int> Window::process_messages()
 	}
 
 	return {};
+}
+
+Graphics& Window::graphics()
+{
+	if (!p_graphics_)
+	{
+		throw NOGRAPHICS_EXCEPT();
+	}
+	return *p_graphics_;
+}
+
+const char* Window::NoGraphicsException::get_type() const noexcept
+{
+	return "Window Exception [No Graphics]";
 }

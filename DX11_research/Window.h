@@ -1,24 +1,48 @@
 #pragma once
 #include "BaseWin.h"
 #include "BaseException.h"
+#include "Graphics.h"
 #include "Keyboard.h"
 #include "Mouse.h"
-#include "optional"
+
+#include <memory>
+#include <optional>
 
 class Window
 {
 public:
 	class Exception : public BaseException
 	{
+		//public:
+		//	Exception(unsigned line, const char* file, HRESULT hr) noexcept;
+		//	const char* what() const noexcept override;
+		//	const char* get_type() const noexcept override;
+		//	static std::string translate_error_code( HRESULT hr) noexcept;
+		//	HRESULT get_error_code() const noexcept;
+		//	std::string get_error_string() const noexcept;
+		//private:
+		//	HRESULT m_hr; //HResult - 32-bit value that is used to describe an error or warning.
+			using BaseException::BaseException;
 		public:
-			Exception(unsigned line, const char* file, HRESULT hr) noexcept;
+			static std::string translate_error_code(HRESULT hr) noexcept;
+	};
+	class HrException : public Exception
+	{
+		public:
+			HrException(int line, const char* file, HRESULT hr) noexcept;
 			const char* what() const noexcept override;
 			const char* get_type() const noexcept override;
-			static std::string translate_error_code( HRESULT hr) noexcept;
 			HRESULT get_error_code() const noexcept;
-			std::string get_error_string() const noexcept;
+			std::string get_error_description() const noexcept;
+			//std::string get_error_string() const noexcept;
 		private:
-			HRESULT m_hr; //HResult - 32-bit value that is used to describe an error or warning. 
+			HRESULT m_hr;
+	};
+	class NoGraphicsException : public Exception
+	{
+			using Exception::Exception;
+		public:
+			const char* get_type() const noexcept override;
 	};
 	
 	Window(unsigned width, unsigned height, const char* name) noexcept;
@@ -26,10 +50,12 @@ public:
 	Window(const Window&) = delete;
 	Window operator= (const Window&) = delete;
 	void set_title(const std::string& title);
-	static std::optional<int> process_messages();
-
+	static std::optional<int> process_messages() noexcept;
+	Graphics& graphics();
+	
 	Keyboard kbd;
 	Mouse mouse;
+	
 
 private:	
 	class Window_Class
@@ -55,7 +81,9 @@ private:
 		unsigned width_;
 		unsigned height_;
 		HWND hwnd_;
+		std::unique_ptr<Graphics> p_graphics_;
 };
 
-#define EXCPT(hr) Window::Exception (__LINE__, __FILE__, hr)
-#define LAST_EXCPT() Window::Exception(__LINE__, __FILE__, GetLastError())
+#define EXCPT(hr) Window::HrException (__LINE__, __FILE__, hr)
+#define LAST_EXCPT() Window::HrException(__LINE__, __FILE__, GetLastError())
+#define NOGRAPHICS_EXCEPT() Window::NoGraphicsException( __LINE__,__FILE__ )

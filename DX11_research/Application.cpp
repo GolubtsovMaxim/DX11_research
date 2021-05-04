@@ -25,5 +25,8 @@ void App::do_frame()
 	/*const float	time = timer_.peek();
 	std::ostringstream oss;
 	oss << "Time elapsed: " << std::setprecision(1) << std::fixed << time << "s";
-	wnd_.set_title(oss.str());*/
+	wnd_.set_title(oss.str());
+	const float c = 0.5f;
+	wnd_.graphics().clear_buffer(200, c, 0.5);
+	wnd_.graphics().end_frame();*/
 }

@@ -148,6 +148,9 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="BaseException.cpp" />
+    <ClCompile Include="dxerr.cpp" />
+    <ClCompile Include="DXGIInfoContainer.cpp" />
+    <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="Keyboard.cpp" />
     <ClCompile Include="Mouse.cpp" />
     <ClCompile Include="Timer.cpp" />
@@ -159,6 +162,9 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="BaseException.h" />
     <ClInclude Include="BaseWin.h" />
+    <ClInclude Include="dxerr.h" />
+    <ClInclude Include="DXGIInfoContainer.h" />
+    <ClInclude Include="Graphics.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="Timer.h" />
