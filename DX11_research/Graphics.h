@@ -41,7 +41,7 @@ public:
 		Graphics(HWND hWnd); //we need a window ref to construct a d3d device
 		Graphics(const Graphics&) = delete;
 		Graphics& operator=(const Graphics&) = delete;
-		~Graphics();
+		~Graphics() = default;
 		void end_frame();
 		void clear_buffer(float red, float green, float blue) noexcept;
 	private:
@@ -49,9 +49,16 @@ public:
 		DXGIInfoContainer m_info_container_;
 #endif
 
-		ID3D11Device* p_device_ = nullptr;
-		IDXGISwapChain* p_swap_chain_ = nullptr;
-		ID3D11DeviceContext* p_device_context_ = nullptr;
-		ID3D11RenderTargetView* p_render_target_view_ = nullptr;
+		//ID3D11Device* p_device_ = nullptr;
+		//IDXGISwapChain* p_swap_chain_ = nullptr;
+		//ID3D11DeviceContext* p_device_context_ = nullptr;
+		//ID3D11RenderTargetView* p_render_target_view_ = nullptr;
 		//DXGI_SWAP_CHAIN_DESC p_desc_ = nullptr;
+
+		//ComPtr to wrap up resource ptr
+	
+		Microsoft::WRL::ComPtr<ID3D11Device> p_device_;
+		Microsoft::WRL::ComPtr<IDXGISwapChain> p_swap_chain_;
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> p_device_context_;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> p_render_target_view_;
 };

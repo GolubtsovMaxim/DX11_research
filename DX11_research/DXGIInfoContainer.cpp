@@ -6,6 +6,7 @@
 #include "Graphics.h"
 #include "Window.h"
 
+
 #pragma comment (lib, "dxguid.lib")
 
 #define GRAPHICS_THROW_NOINFO(hrcall) if (FAILED(hr = (hrcall))) throw Graphics::HrException( __LINE__,__FILE__,hr )
@@ -33,16 +34,8 @@ DXGIInfoContainer::DXGIInfoContainer()
 	}
 
 	HRESULT hr;
-	GRAPHICS_THROW_NOINFO(DxgiGetDebugInterface(__uuidof(IDXGIInfoQueue), reinterpret_cast<void**>(&p_idxgi_info_queue_)));
+	GRAPHICS_THROW_NOINFO(DxgiGetDebugInterface(__uuidof(IDXGIInfoQueue), &p_idxgi_info_queue_));
 	
-}
-
-DXGIInfoContainer::~DXGIInfoContainer()
-{
-	if (p_idxgi_info_queue_ != nullptr)
-	{
-		p_idxgi_info_queue_->Release();
-	}
 }
 
 void DXGIInfoContainer::set() noexcept
